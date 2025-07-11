@@ -1,3 +1,5 @@
+import Weather from "./Weather";
+
 const Country = ({ country }) => {
   const name = country.name.common;
 
@@ -13,6 +15,7 @@ const Country = ({ country }) => {
         ))}
       </ul>
       <div style={{ fontSize: "120px" }}>{country.flag}</div>
+      <Weather country={country} />
     </>
   );
 };
