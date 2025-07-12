@@ -71,7 +71,7 @@ const App = () => {
     if (confirm(`Delete ${entry.name}?`)) {
       phonebookService
         .deleteEntry(entry.id)
-        .then((res) => setPersons(persons.filter((p) => p.id !== res.id)))
+        .then(() => setPersons(persons.filter((p) => p.id !== entry.id)))
         .catch((error) => {
           setMessage({ text: error.message, status: "error" });
           setTimeout(() => {
