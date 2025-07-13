@@ -1,6 +1,8 @@
+require("dotenv").config();
 const express = require("express");
 const app = express();
 const morgan = require("morgan");
+const PhonebookEntry = require("./models/phonebookEntry");
 
 app.use(express.json());
 app.use(express.static("dist"));
@@ -10,12 +12,6 @@ morgan.token(
   (req) => req.method === "POST" && JSON.stringify(req.body)
 );
 app.use(morgan(":method :url :status :response-time ms :person"));
-
-const generateId = () => {
-  const maxId =
-    persons.length > 0 ? Math.max(...persons.map((n) => Number(n.id))) : 0;
-  return String(maxId + 1);
-};
 
 let persons = [
   {
@@ -47,15 +43,15 @@ app.get("/info", (request, response) => {
 });
 
 app.get("/api/persons", (request, response) => {
-  response.json(persons);
+  PhonebookEntry.find({}).then((entries) => {
+    response.json(entries);
+  });
 });
 
 app.get("/api/persons/:id", (request, response) => {
-  const id = request.params.id;
-  const person = persons.find((p) => p.id === id);
-  if (!person) {
-    return response.status(404).json({ error: "person not found" });
-  }
+  PhonebookEntry.findById(request.params.id).then((entry) => {
+    response.json(entry);
+  });
 });
 
 app.delete("/api/persons/:id", (request, response) => {
@@ -74,18 +70,12 @@ app.post("/api/persons", (request, response) => {
   if (!body.number) {
     return response.status(400).json({ error: "number missing" });
   }
-  if (persons.map((p) => p.name).includes(body.name)) {
-    return response
-      .status(400)
-      .json({ error: "person is already in the phonebook" });
-  }
 
-  const person = { name: body.name, number: body.number, id: generateId() };
-  persons = persons.concat(person);
+  const person = new PhonebookEntry({ name: body.name, number: body.number });
 
-  response.json(person);
+  person.save().then((savedEntry) => response.json(savedEntry));
 });
 
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT;
 app.listen(PORT);
 console.log(`Server running on port ${PORT}`);
