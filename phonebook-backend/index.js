@@ -13,32 +13,11 @@ morgan.token(
 );
 app.use(morgan(":method :url :status :response-time ms :person"));
 
-let persons = [
-  {
-    id: "1",
-    name: "Arto Hellas",
-    number: "040-123456",
-  },
-  {
-    id: "2",
-    name: "Ada Lovelace",
-    number: "39-44-5323523",
-  },
-  {
-    id: "3",
-    name: "Dan Abramov",
-    number: "12-43-234345",
-  },
-  {
-    id: "4",
-    name: "Mary Poppendieck",
-    number: "39-23-6423122",
-  },
-];
-
 app.get("/info", (request, response) => {
+  const numEntries = PhonebookEntry.find({}).then((result) => result.length);
+
   response.send(
-    `<p>Phonebook has info for ${persons.length} people</p><p>${new Date()}</p>`
+    `<p>Phonebook has info for ${numEntries} people</p><p>${new Date()}</p>`
   );
 });
 
@@ -54,14 +33,15 @@ app.get("/api/persons/:id", (request, response) => {
   });
 });
 
-app.delete("/api/persons/:id", (request, response) => {
-  const id = request.params.id;
-  persons = persons.filter((p) => p.id !== id);
-
-  response.status(204).end();
+app.delete("/api/persons/:id", (request, response, next) => {
+  PhonebookEntry.findByIdAndDelete(request.params.id)
+    .then((result) => {
+      response.status(204).end();
+    })
+    .catch((error) => next(error));
 });
 
-app.post("/api/persons", (request, response) => {
+app.post("/api/persons", (request, response, next) => {
   const body = request.body;
 
   if (!body.name) {
@@ -73,8 +53,48 @@ app.post("/api/persons", (request, response) => {
 
   const person = new PhonebookEntry({ name: body.name, number: body.number });
 
-  person.save().then((savedEntry) => response.json(savedEntry));
+  person
+    .save()
+    .then((savedEntry) => response.json(savedEntry))
+    .catch((error) => next(error));
 });
+
+app.put("/api/persons/:id", (request, response, next) => {
+  const { name, number } = request.body;
+
+  PhonebookEntry.findById(request.params.id)
+    .then((entry) => {
+      if (!entry) {
+        return response.status(404).end();
+      }
+
+      entry.name = name;
+      entry.number = number;
+
+      entry
+        .save()
+        .then((updatedEntry) => response.json(updatedEntry))
+        .catch((error) => next(error));
+    })
+    .catch((error) => next(error));
+});
+
+// should be the last loaded middleware
+const errorHandler = (error, request, response, next) => {
+  console.error(error.message);
+
+  if (error.name === "CastError") {
+    return response.status(400).send({ error: "malformatted id" });
+  } else if (
+    error.name === "ValidationError" ||
+    error.name === "ValidatorError"
+  ) {
+    return response.status(400).json({ error: error.message });
+  }
+
+  next(error);
+};
+app.use(errorHandler);
 
 const PORT = process.env.PORT;
 app.listen(PORT);
