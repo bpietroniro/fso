@@ -32,15 +32,24 @@ const App = () => {
     }
     const newPerson = { name: newName, number: newNumber };
 
-    phonebookService.create(newPerson).then((returnedObj) => {
-      setPersons(persons.concat(returnedObj));
-      setNewName("");
-      setNewNumber("");
-      setMessage({ text: `Added ${returnedObj.name}`, status: "success" });
-      setTimeout(() => {
-        setMessage(null);
-      }, 5000);
-    });
+    phonebookService
+      .create(newPerson)
+      .then((returnedObj) => {
+        setPersons(persons.concat(returnedObj));
+        setNewName("");
+        setNewNumber("");
+        setMessage({ text: `Added ${returnedObj.name}`, status: "success" });
+        setTimeout(() => {
+          setMessage(null);
+        }, 5000);
+      })
+      .catch((error) => {
+        console.log(error.response.data.error);
+        setMessage({ text: error.response.data.error, status: "error" });
+        setTimeout(() => {
+          setMessage(null);
+        }, 5000);
+      });
   };
 
   const updateEntry = () => {
@@ -60,7 +69,7 @@ const App = () => {
         }, 5000);
       })
       .catch((error) => {
-        setMessage({ text: error.message, status: "error" });
+        setMessage({ text: error.response.data.error, status: "error" });
         setTimeout(() => {
           setMessage(null);
         }, 5000);
