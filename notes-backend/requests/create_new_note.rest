@@ -2,6 +2,7 @@ POST http://localhost:3001/api/notes
 Content-Type: application/json
 
 {
-  "content": "VS code rest client is a pretty handy tool",
-  "important": true
+  "content": "HTML is easy",
+  "important": true,
+  "userId": "687c580d826bad8de93f0f35"
 }

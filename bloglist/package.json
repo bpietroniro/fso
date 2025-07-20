@@ -1,14 +1,12 @@
 {
-  "name": "notes-backend",
+  "name": "bloglist",
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
     "start": "cross-env NODE_ENV=production node index.js",
     "dev": "cross-env NODE_ENV=development node --watch index.js",
     "test": "cross-env NODE_ENV=test node --test --test-concurrency=1",
-    "lint": "eslint .",
-    "build:ui": "rm -rf dist && cd ../notes-frontend/ && npm run build && cp -r dist ../notes-backend",
-    "deploy:full": "npm run build:ui && git add . && git commit -m uibuild && git push"
+    "lint": "eslint ."
   },
   "author": "Bethany Pietroniro <bethany.pietroniro28@gmail.com>",
   "license": "MIT",
@@ -20,6 +18,7 @@
     "express": "^4.16.2",
     "express-async-errors": "^3.1.1",
     "jsonwebtoken": "^9.0.2",
+    "lodash": "^4.17.21",
     "mongoose": "^8.16.3"
   },
   "devDependencies": {
