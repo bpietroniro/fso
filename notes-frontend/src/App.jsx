@@ -2,34 +2,59 @@ import { useEffect, useState } from "react";
 import Footer from "./components/Footer";
 import Note from "./components/Note";
 import Notification from "./components/Notification";
+import LoginForm from "./components/LoginForm";
 import notesService from "./services/notes";
+import loginService from "./services/login";
+import Togglable from "./components/Togglable";
+import NoteForm from "./components/NoteForm";
+import { useRef } from "react";
 
 const App = () => {
   const [notes, setNotes] = useState([]);
-  const [newNote, setNewNote] = useState("a new note...");
   const [showAll, setShowAll] = useState(true);
-  const [errorMessage, setErrorMessage] = useState(null);
+  const [notification, setNotification] = useState(null);
+  const [user, setUser] = useState(null);
+  const noteFormRef = useRef();
 
   useEffect(() => {
     notesService.getAll().then((initialNotes) => setNotes(initialNotes));
   }, []);
 
-  const addNote = (event) => {
-    event.preventDefault();
-    const noteObject = {
-      content: newNote,
-      important: Math.random() < 0.5,
-      id: String(notes.length + 1),
-    };
+  useEffect(() => {
+    const loggedInUserJson = window.localStorage.getItem("loggedInNoteappUser");
+    if (loggedInUserJson) {
+      const user = JSON.parse(loggedInUserJson);
+      setUser(user);
+      notesService.setToken(user.token);
+    }
+  }, []);
 
-    notesService.create(noteObject).then((returnedNote) => {
-      setNotes(notes.concat(returnedNote));
-      setNewNote("");
-    });
+  const addNote = (noteObject) => {
+    noteFormRef.current.toggleVisibility();
+    notesService
+      .create(noteObject)
+      .then((returnedNote) => setNotes(notes.concat(returnedNote)));
   };
 
-  const handleNoteChange = (event) => {
-    setNewNote(event.target.value);
+  const handleLogin = async (credentials) => {
+    try {
+      const user = await loginService.login(credentials);
+
+      window.localStorage.setItem("loggedInNoteappUser", JSON.stringify(user));
+      notesService.setToken(user.token);
+      setUser(user);
+    } catch (e) {
+      setNotification({ message: "wrong credentials", status: "error" });
+      setTimeout(() => {
+        setNotification(null);
+      }, 5000);
+    }
+  };
+
+  const handleLogout = () => {
+    window.localStorage.clear();
+    notesService.setToken(null);
+    setUser(null);
   };
 
   const notesToShow = showAll
@@ -46,11 +71,12 @@ const App = () => {
         setNotes(notes.map((note) => (note.id === id ? returnedNote : note)))
       )
       .catch((error) => {
-        setErrorMessage(
-          `the note '${note.content}' was already deleted from server`
-        );
+        setNotification({
+          message: `the note '${note.content}' was already deleted from server`,
+          status: "error",
+        });
         setTimeout(() => {
-          setErrorMessage(null);
+          setNotification(null);
         }, 5000);
         console.error(error.message);
         setNotes(notes.filter((n) => n.id !== id));
@@ -60,7 +86,27 @@ const App = () => {
   return (
     <div>
       <h1>Notes</h1>
-      <Notification message={errorMessage} />
+      {notification && (
+        <Notification
+          message={notification?.message}
+          status={notification?.status}
+        />
+      )}
+
+      {user === null ? (
+        <Togglable buttonLabel="show login">
+          <LoginForm handleSubmit={handleLogin} />
+        </Togglable>
+      ) : (
+        <div>
+          <p>{user.username} logged in</p>
+          <Togglable buttonLabel="new note" ref={noteFormRef}>
+            <NoteForm createNote={addNote} />
+          </Togglable>
+          <button onClick={handleLogout}>logout</button>
+        </div>
+      )}
+
       <div>
         <button onClick={() => setShowAll(!showAll)}>
           show {showAll ? "important" : "all"}
@@ -75,10 +121,6 @@ const App = () => {
           />
         ))}
       </ul>
-      <form onSubmit={addNote}>
-        <input onChange={handleNoteChange} value={newNote} />
-        <button type="submit">save</button>
-      </form>
 
       <Footer />
     </div>

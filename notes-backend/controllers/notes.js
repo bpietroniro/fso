@@ -32,11 +32,7 @@ notesRouter.post("/", async (request, response) => {
     return response.status(401).json({ error: "invalid token" });
   }
 
-  const user = await User.findById(body.userId);
-
-  if (!user) {
-    return response.status(400).json({ error: "userId missing or not valid" });
-  }
+  const user = await User.findById(decodedToken.id);
 
   const note = new Note({
     content: body.content,

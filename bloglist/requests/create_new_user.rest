@@ -4,5 +4,5 @@ Content-Type: application/json
 {
   "username": "superuser",
   "name": "Super User",
-  "password": "gfdsjklg"
+  "password": "secret",
 }

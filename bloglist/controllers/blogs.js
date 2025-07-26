@@ -2,6 +2,15 @@ const blogsRouter = require("express").Router();
 const Blog = require("../models/blog");
 const User = require("../models/user");
 const { userExtractor } = require("../utils/middleware");
+const jwt = require("jsonwebtoken");
+
+const getTokenFrom = (request) => {
+  const authorization = request.get("authorization");
+  if (authorization && authorization.startsWith("Bearer ")) {
+    return authorization.replace("Bearer ", "");
+  }
+  return null;
+};
 
 blogsRouter.get("/", async (request, response) => {
   const blogs = await Blog.find({}).populate("user", {
@@ -22,18 +31,18 @@ blogsRouter.get("/:id", async (request, response) => {
 
 blogsRouter.post("/", userExtractor, async (request, response) => {
   const body = request.body;
+  const decodedToken = jwt.verify(getTokenFrom(request), process.env.SECRET);
+  if (!decodedToken.id) {
+    return response.status(401).json({ error: "invalid token" });
+  }
+
+  const user = await User.findById(decodedToken.id);
 
   if (!body.title) {
-    response.status(400).send("missing title");
+    return response.status(400).send("missing title");
   }
   if (!body.url) {
-    response.status(400).send("missing URL");
-  }
-
-  const user = await User.findById(body.userId);
-
-  if (!user) {
-    return response.status(400).json({ error: "userId missing or not valid" });
+    return response.status(400).send("missing URL");
   }
 
   const blog = new Blog({
@@ -77,6 +86,7 @@ blogsRouter.put("/:id", async (request, response) => {
   blog.likes = likes;
 
   const updatedBlog = await blog.save();
+
   response.json(updatedBlog);
 });
 
