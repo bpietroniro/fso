@@ -1,10 +1,4 @@
-const {
-  test,
-  expect,
-  beforeEach,
-  describe,
-  request,
-} = require("@playwright/test");
+const { test, expect, beforeEach, describe } = require("@playwright/test");
 const { loginWith, addBlog } = require("./helper");
 
 describe("Blog app", () => {
